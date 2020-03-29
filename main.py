@@ -10,7 +10,7 @@ def main():
     masks = [r_mask] #TODO Add blue mask
     img_binary = threshold(img_gray)
 
-    displayContours(img, img_binary, masks)
+    findContours(img, img_binary, masks)
 
     utils.showImage(img, 'Final Classification')
 
@@ -37,8 +37,7 @@ def threshold(img_gray):
 
     return threshed
 
-def displayContours(img, img_binary, masks):
-    font = cv.FONT_HERSHEY_COMPLEX
+def findContours(img, img_binary, masks):
     contours, hierarchy = cv.findContours(img_binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
     for i in range(len(contours)):
@@ -50,13 +49,27 @@ def displayContours(img, img_binary, masks):
             continue
 
         approx = cv.approxPolyDP(cnt, 0.03 * cv.arcLength(cnt, True), True)
-        x = approx.ravel()[0]
-        y = approx.ravel()[1]
+        classifyContours(img, approx, masks)
+
+def classifyContours(img, approx, masks):
+    font = cv.FONT_HERSHEY_COMPLEX
+
+    x = approx.ravel()[0]
+    y = approx.ravel()[1]
+
+    side_no = len(approx)
         
-        if(len(approx) == 3):
-            img = cv.drawContours(img, [approx], -1, (255, 0, 0), 3)
-            color = determineColor(masks, y, x)
-            cv.putText(img, color + ' Triangle', (x, y), font, 1, (0, 0, 255), thickness=2)
+    if(side_no <= 4):
+        img = cv.drawContours(img, [approx], -1, (255, 0, 0), 3)
+        color = determineColor(masks, y, x)
+        shape = ''
+
+        if(side_no == 3):
+            shape = ' Triangle'
+        elif(side_no == 4):
+            shape = ' Rectangle'
+        
+        cv.putText(img, color + shape, (x, y), font, 1, (0, 0, 255), thickness=2)
 
 def determineColor(masks, y, x):
     if(masks[0][y][x] == 255):
