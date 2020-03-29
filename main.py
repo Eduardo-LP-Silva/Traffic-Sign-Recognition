@@ -2,63 +2,64 @@ import cv2 as cv
 import numpy as np
 import utils
 
-font = cv.FONT_HERSHEY_COMPLEX
+def main():
+    img = utils.readImage()
+    img = smooth(img)
 
-# TODO Add option to read image from camera
-'''
-filename = input('Filename: ')
-img = cv.imread(filename)
-'''
-img = cv.imread('./examples/red_triangle.jpg', cv.IMREAD_COLOR)
-#Image Smoothing
-img = cv.bilateralFilter(img, 5, 75, 75)
-img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+    img_gray, r_mask = segment(img)
+    masks = [r_mask] #TODO Add blue mask
+    img_binary = threshold(img_gray)
 
-#Segmentation
-#Use simple color segmentation (see Nemo example)
-#Red Segmentation (HSV Ranges -> (0-179, 0-255, 0-255))
-red_ranges = [(0, 70, 70), (4, 255, 255), (170, 70, 70), (180, 255, 255)]
-mask_1 = cv.inRange(img_hsv, red_ranges[0], red_ranges[1])
-mask_2 = cv.inRange(img_hsv, red_ranges[2], red_ranges[3])
-mask = mask_1 + mask_2
-segmented = cv.bitwise_and(img, img, mask=mask)
-segmented_gray = cv.cvtColor(segmented, cv.COLOR_BGR2GRAY)
-#CHECK Adjust last 2 params
-_, threshed = cv.threshold(segmented_gray, 1, 255, cv.THRESH_BINARY)
-#CHECK Second argument maybe cv.RETR_CCOMP https://docs.opencv.org/3.4/d3/dc0/group__imgproc__shape.html#ga819779b9857cc2f8601e6526a3a5bc71
-contours, hierarchy = cv.findContours(threshed, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-for i in range(len(contours)):
-    cnt = contours[i]
-    cnt_len = cv.arcLength(cnt, True)
+    displayContours(img, img_binary, masks)
 
-    #CHECK Adjust value
-    if(cnt_len <= 70 or hierarchy[0][i][3] != -1):
-        continue
+    utils.showImage(img, 'Final Classification')
 
-    approx = cv.approxPolyDP(cnt, 0.03 * cv.arcLength(cnt, True), True)
-    x = approx.ravel()[0]
-    y = approx.ravel()[1]
-    
-    if(len(approx) == 3):
-        img = cv.drawContours(img, [approx], -1, (255, 0, 0), 3)
-        cv.putText(img, 'Triangle', (x, y), font, 1, (0, 0, 255), thickness=2)
+def smooth(img):
+    return cv.bilateralFilter(img, 5, 75, 75)
 
-utils.showImage(img, 'smt')
+def segment(img):
+    #Red Segmentation (HSV Ranges -> (0-179, 0-255, 0-255))
+    red_ranges = [(0, 70, 70), (4, 255, 255), (170, 70, 70), (180, 255, 255)]
 
+    img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
-#Apply meanshift to relevant areas(?)
-#Detect shape in found areas (see video)
-'''
-window = (300, 200, 100, 50) #(x, y, w, h), (x, y) -> coords of top left corner, (w, h) -> width and height
-roi = img
-edges = cv.Canny(img,200,255)
-cv.imshow('edges', edges)
-cv.waitKey(0)
-cv.destroyAllWindows()
-'''
+    r_mask_1 = cv.inRange(img_hsv, red_ranges[0], red_ranges[1])
+    r_mask_2 = cv.inRange(img_hsv, red_ranges[2], red_ranges[3])
+    r_mask = r_mask_1 + r_mask_2
+    segmented = cv.bitwise_and(img, img, mask=r_mask)
+    segmented_gray = cv.cvtColor(segmented, cv.COLOR_BGR2GRAY)
 
-# Edge detection
-# Shape detection -> squares/triangles/circles
-# Color detection -> blue/red
+    return segmented_gray, r_mask
 
-# -> Sign detection
+def threshold(img_gray):
+    #CHECK Adjust last 2 params
+    _, threshed = cv.threshold(img_gray, 1, 255, cv.THRESH_BINARY)
+
+    return threshed
+
+def displayContours(img, img_binary, masks):
+    font = cv.FONT_HERSHEY_COMPLEX
+    contours, hierarchy = cv.findContours(img_binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+    for i in range(len(contours)):
+        cnt = contours[i]
+        cnt_len = cv.arcLength(cnt, True)
+
+        #CHECK Adjust value
+        if(cnt_len <= 70 or hierarchy[0][i][3] != -1):
+            continue
+
+        approx = cv.approxPolyDP(cnt, 0.03 * cv.arcLength(cnt, True), True)
+        x = approx.ravel()[0]
+        y = approx.ravel()[1]
+        
+        if(len(approx) == 3):
+            img = cv.drawContours(img, [approx], -1, (255, 0, 0), 3)
+            color = determineColor(masks, y, x)
+            cv.putText(img, color + ' Triangle', (x, y), font, 1, (0, 0, 255), thickness=2)
+
+def determineColor(masks, y, x):
+    if(masks[0][y][x] == 255):
+        return 'Red'
+
+main()
