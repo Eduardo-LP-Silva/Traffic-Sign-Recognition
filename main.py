@@ -8,10 +8,13 @@ def main():
 
     img_gray, r_mask = segment(img)
     masks = [r_mask] #TODO Add blue mask
+    img_gray = smooth(img_gray)
     img_binary = threshold(img_gray)
 
-    findContours(img, img_binary, masks)
+    findCircles(img, img_gray, img_binary)
+    #findContours(img, img_binary, masks)
 
+    #utils.showImage(img_gray)
     utils.showImage(img, 'Final Classification')
 
 def smooth(img):
@@ -51,6 +54,40 @@ def findContours(img, img_binary, masks):
         approx = cv.approxPolyDP(cnt, 0.03 * cv.arcLength(cnt, True), True)
         classifyContours(img, approx, masks)
 
+def findCircles(img, img_gray, img_binary):
+    font = cv.FONT_HERSHEY_COMPLEX
+    rows = img_gray.shape[0]
+
+    max = 0
+
+    for i in range(len(img_binary)):
+        line_max = 0
+        line_aux = 0
+
+        for j in range(len(img_binary[i])):
+            if img_binary[i][j] != 0:
+                line_aux += 1
+            else:
+                if line_max < line_aux:
+                    line_max = line_aux
+                line_aux = 0
+
+        if max < line_max:
+            max = line_max
+    
+    #Fixed values: minDist = 70 (?), maxRadius = 50
+    circles = cv.HoughCircles(img_gray, cv.HOUGH_GRADIENT, 1, max, param1=300, param2=14, minRadius=14, maxRadius=max)
+
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+
+        for i in circles[0, :]:
+            center = (i[0], i[1])
+            radius = i[2]
+
+            cv.circle(img, center, radius, (0, 255, 255), 2)
+            #cv.putText(img, color + ' Circle', center, font, 1, (0, 0, 255), thickness=2)
+
 def classifyContours(img, approx, masks):
     font = cv.FONT_HERSHEY_COMPLEX
 
@@ -60,18 +97,18 @@ def classifyContours(img, approx, masks):
     side_no = len(approx)
         
     if(side_no <= 4):
-        img = cv.drawContours(img, [approx], -1, (255, 0, 0), 3)
-        color = determineColor(masks, y, x)
+        img = cv.drawContours(img, [approx], -1, (0, 255, 255), 3)
+        color = findColor(masks, y, x)
         shape = ''
 
         if(side_no == 3):
             shape = ' Triangle'
         elif(side_no == 4):
             shape = ' Rectangle'
-        
+
         cv.putText(img, color + shape, (x, y), font, 1, (0, 0, 255), thickness=2)
 
-def determineColor(masks, y, x):
+def findColor(masks, y, x):
     if(masks[0][y][x] == 255):
         return 'Red'
 
