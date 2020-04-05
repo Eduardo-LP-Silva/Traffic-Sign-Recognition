@@ -1,79 +1,119 @@
 import cv2 as cv
 import numpy as np
+import utils
 
-def display_image(window_name, img):
-    cv.imshow(window_name, img)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+# Program's entry point
+def main():
+    img = utils.readImage()
+    img = smooth(img)
 
-def detect_shape(contour):
-    shape = 'unidentified'
-    # parameters: curve, closed
-    peri = cv.arcLength(contour, True) # perimeter
-    # parameters: curve, epsilon (approximation accuracy), closed
-    approx = cv.approxPolyDP(contour, 0.04 * peri, True)
-    # if the shape has 4 vertices, it is either a square or a rectangle
-    if len(approx) == 4:
-        # compute the bounding box of the contour and use it to compute the aspect ratio
-        (x, y, w, h) = cv.boundingRect(approx)
-        ar = w / float(h)
+    # processImage(img, 'Red')
+    processImage(img, 'Blue')
 
-        # a square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
-        shape = 'square' if ar >= 0.95 and ar <= 1.05 else 'rectangle'
+    utils.showImage(img, 'Final Classification')
+
+# Find and classify the red or blue signs in an image 
+def processImage(img, color):
+    img_gray = segment(img, color)
+    img_gray = smooth(img_gray) # Post-segmentation smoothing
+    img_binary = threshold(img_gray)
+
+    findCircles(img, img_gray, img_binary, color)
+    findContours(img, img_binary, color)
+
+# Noise smoothing
+def smooth(img):
+    #Last two values may be adjusted if needed
+    return cv.bilateralFilter(img, 5, 75, 75)
+
+# Segments an image by a given color (red or blue)
+def segment(img, color):
+    # Red Segmentation (HSV Ranges -> (0-179, 0-255, 0-255))
+    red_ranges = [(0, 70, 70), (4, 255, 255), (170, 70, 70), (180, 255, 255)]
+    # Blue Segmentation
+    blue_ranges = [(100, 140, 100), (120, 255, 255)]
+
+    img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+
+    if color == 'Red':
+        r_mask_1 = cv.inRange(img_hsv, red_ranges[0], red_ranges[1])
+        r_mask_2 = cv.inRange(img_hsv, red_ranges[2], red_ranges[3])
+        r_mask = r_mask_1 + r_mask_2
+        segmented = cv.bitwise_and(img, img, mask=r_mask)
+    elif color == 'Blue':
+        b_mask = cv.inRange(img_hsv, blue_ranges[0], blue_ranges[1])
+        segmented = cv.bitwise_and(img, img, mask=b_mask)
+
+    segmented_gray = cv.cvtColor(segmented, cv.COLOR_BGR2GRAY)
+    return segmented_gray
+
+# Converts a grey, segmented image to binary form
+def threshold(img_gray):
+    _, threshed = cv.threshold(img_gray, 1, 255, cv.THRESH_BINARY)
+
+    return threshed
+
+# Finds contours in a binary image
+def findContours(img, img_binary, color):
+    contours, hierarchy = cv.findContours(img_binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+    for i in range(len(contours)):
+        cnt = contours[i]
+        cnt_len = cv.arcLength(cnt, True)
+
+        #Max contour length may be adjusted if needed 
+        if(cnt_len <= 70 or hierarchy[0][i][3] != -1):
+            continue
+
+        approx = cv.approxPolyDP(cnt, 0.03 * cv.arcLength(cnt, True), True)
+        if cv.contourArea(approx) < 1000 or not cv.isContourConvex(approx):
+            continue
+        classifyContours(img, approx, color)
+
+# Finds circles in a grey image, displaying them over the original one
+def findCircles(img, img_gray, img_binary, color):
+    font = cv.FONT_HERSHEY_COMPLEX
+    rows = img_gray.shape[0]
+
+    max = utils.getMaxCircleWidth(img_binary)
     
-    return shape, approx
+    #Previous fixed values (for reference): minDist = 70 (?), maxRadius = 50
+    #param1 might need to be image specific, evaluate results with fixed 300
+    circles = cv.HoughCircles(img_gray, cv.HOUGH_GRADIENT, 1, max, param1=300, param2=14, minRadius=14, maxRadius=max)
 
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
 
-# TO DO: option to take the picture
-# read from keyboard the name of the image
-# filename = input('Filename: ')
-# img = cv.imread(filename)
+        for i in circles[0, :]:
+            center = (i[0], i[1])
+            radius = i[2]
+      
+            cv.circle(img, center, radius, (0, 255, 255), 2)
+            cv.putText(img, color + ' Circle', (i[0] + radius, i[1] + radius), font, 1, (0, 255, 255), thickness=2)
 
-img = cv.imread('./examples/blue-rectangles/22.jpg', cv.IMREAD_COLOR) # retorna Mat
-display_image('Original image', img)
-blurred = cv.bilateralFilter(img, 5, 75, 75)
-# display_image('Blurred', blurred)
+# Classifies contours in either triangles or squares/rectangles and displays them over the original image
+def classifyContours(img, approx, color):
+    font = cv.FONT_HERSHEY_COMPLEX
 
-###### COLOR #######
+    x = approx.ravel()[0]
+    y = approx.ravel()[1]
 
-img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
-blurred = cv.bilateralFilter(img_hsv, 5, 75, 75)
+    side_no = len(approx)
+        
+    if(side_no <= 4):
+        img = cv.drawContours(img, [approx], -1, (0, 255, 255), 3)
+        shape = ''
 
-light_blue = (100, 140, 100)
-dark_blue = (120, 255, 255)
+        # TODO Add more restrictions
+        # Equilateral sort of
+        # 60º angles
+        if(side_no == 3):
+            shape = ' Triangle'
 
-# all values that are not in the above range will be black
-mask = cv.inRange(blurred, light_blue, dark_blue)
-result = cv.bitwise_and(blurred, blurred, mask=mask)
+        # Area minimum threshold
+        elif(side_no == 4):
+            shape = ' Rectangle'
+        cv.putText(img, color + shape, (x, y), font, 1, (0, 255, 255), thickness=2)
+        print(color + shape)
 
-# display_image('Thresholding blue', result)
-
-###### SHAPE #######
-
-gray_img = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
-gray_img = cv.bilateralFilter(gray_img, 5, 75, 75)
-_, bynary_img = cv.threshold(gray_img, 1, 255, cv.THRESH_BINARY)
-
-# detecting contours
-contours, _ = cv.findContours(bynary_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)    
-
-# loop over the contours
-for c in contours:
-    # compute the center of the contour, then detect the name of the shape using only the contour
-    M = cv.moments(c)
-    if M['m00'] == 0:
-        continue
-    
-    shape, c = detect_shape(c)
-    if shape != 'rectangle' and shape != 'square':
-        continue
-
-    if cv.contourArea(c) < 1000 or not cv.isContourConvex(c):
-        continue
-
-    cv.drawContours(img, [c], -1, (0, 255, 0), 2)
-    cX = c[0,0,0]
-    cY = c[0,0,1]
-    cv.putText(img, shape, (cX, cY), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
-display_image('Shapes', img)
+main()
