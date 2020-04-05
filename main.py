@@ -102,13 +102,20 @@ def classifyContours(img, approx, color):
                 return
 
             shape = ' Triangle'
-
-        # Area minimum threshold
         elif(side_no == 4):
+            #print(approx_ravel)
+            contour_only_img = np.zeros((len(img), len(img[0])), np.uint8)
+            angles = utils.calcCornerAngles(cv.drawContours(contour_only_img, [approx], -1, (255), 1), approx_ravel)
+
+            for i in range(len(angles)):
+                if(abs(angles[i] - 90) > 10):
+                    print(angles[i])
+                    return
+
             shape = ' Rectangle'
 
-        img = cv.drawContours(img, [approx], -1, (0, 255, 255), 3)
-        cv.putText(img, color + shape, (x, y), font, 1, (0, 255, 255), thickness=2)
+        img = cv.drawContours(img, [approx], -1, (0, 255, 0), 3)
+        cv.putText(img, color + shape, (x, y), font, 1, (0, 255, 0), thickness=2)
 
 # Finds circles in a grey image, displaying them over the original one
 def findCircles(img, img_gray, img_binary, color):
