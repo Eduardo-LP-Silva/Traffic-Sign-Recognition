@@ -20,7 +20,7 @@ def processImage(img, color):
     img_gray = smooth(img_gray) # Post-segmentation smoothing
     img_binary = threshold(img_gray)
 
-    findCircles(img, img_gray, img_binary, color)
+    #findCircles(img, img_gray, img_binary, color)
     findContours(img, img_binary, color)
 
 # Noise smoothing
@@ -47,6 +47,7 @@ def segment(img, color):
         segmented = cv.bitwise_and(img, img, mask=b_mask)
 
     segmented_gray = cv.cvtColor(segmented, cv.COLOR_BGR2GRAY)
+
     return segmented_gray
 
 # Converts a grey, segmented image to binary form
@@ -68,9 +69,46 @@ def findContours(img, img_binary, color):
             continue
 
         approx = cv.approxPolyDP(cnt, 0.03 * cv.arcLength(cnt, True), True)
+
         if cv.contourArea(approx) < 1000 or not cv.isContourConvex(approx):
             continue
+
         classifyContours(img, approx, color)
+
+# Classifies contours in either triangles or squares/rectangles and displays them over the original image
+def classifyContours(img, approx, color):
+    font = cv.FONT_HERSHEY_COMPLEX
+    approx_ravel = approx.ravel()
+
+    x = approx_ravel[0]
+    y = approx_ravel[1]
+
+    side_no = len(approx)
+        
+    if(side_no <= 4):
+        shape = ''
+
+        # TODO Add more restrictions
+        if(side_no == 3):
+            side1 = utils.calcDistance(approx_ravel[0], approx_ravel[1], approx_ravel[2], approx_ravel[3])
+            side2 = utils.calcDistance(approx_ravel[0], approx_ravel[1], approx_ravel[4], approx_ravel[5])
+            side3 = utils.calcDistance(approx_ravel[2], approx_ravel[3], approx_ravel[4], approx_ravel[5])
+
+            diff1 = int(abs(side1 - side2))
+            diff2 = int(abs(side1 - side3))
+            diff3 = int(abs(side2 - side3))
+
+            if(diff1 > 30 or diff2 > 30 or diff3 > 30):
+                return
+
+            shape = ' Triangle'
+
+        # Area minimum threshold
+        elif(side_no == 4):
+            shape = ' Rectangle'
+
+        img = cv.drawContours(img, [approx], -1, (0, 255, 255), 3)
+        cv.putText(img, color + shape, (x, y), font, 1, (0, 255, 255), thickness=2)
 
 # Finds circles in a grey image, displaying them over the original one
 def findCircles(img, img_gray, img_binary, color):
@@ -92,30 +130,5 @@ def findCircles(img, img_gray, img_binary, color):
       
             cv.circle(img, center, radius, (0, 255, 255), 2)
             cv.putText(img, color + ' Circle', (i[0] + radius, i[1] + radius), font, 1, (0, 255, 255), thickness=2)
-
-# Classifies contours in either triangles or squares/rectangles and displays them over the original image
-def classifyContours(img, approx, color):
-    font = cv.FONT_HERSHEY_COMPLEX
-
-    x = approx.ravel()[0]
-    y = approx.ravel()[1]
-
-    side_no = len(approx)
-        
-    if(side_no <= 4):
-        img = cv.drawContours(img, [approx], -1, (0, 255, 255), 3)
-        shape = ''
-
-        # TODO Add more restrictions
-        # Equilateral sort of
-        # 60º angles
-        if(side_no == 3):
-            shape = ' Triangle'
-
-        # Area minimum threshold
-        elif(side_no == 4):
-            shape = ' Rectangle'
-        cv.putText(img, color + shape, (x, y), font, 1, (0, 255, 255), thickness=2)
-        print(color + shape)
 
 main()
