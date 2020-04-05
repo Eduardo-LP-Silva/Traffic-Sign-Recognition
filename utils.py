@@ -4,7 +4,7 @@ import cv2 as cv
 def readImage():
     # TODO Add option to read image from camera
     #filename = input('Filename: ')
-    img = cv.imread('./examples/blue-rectangles/1.jpg', cv.IMREAD_COLOR) #TODO Replace with var filename
+    # img = cv.imread('./examples/blue-rectangles/1.jpg', cv.IMREAD_COLOR) #TODO Replace with var filename
     
     return img
 

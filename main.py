@@ -7,8 +7,10 @@ def main():
     img = utils.readImage()
     img = smooth(img)
 
-    # processImage(img, 'Red')
-    processImage(img, 'Blue')
+    img_red, img_blue = img, img
+
+    processImage(img_red, 'Red')
+    processImage(img_blue, 'Blue')
 
     utils.showImage(img, 'Final Classification')
 
@@ -79,7 +81,7 @@ def findCircles(img, img_gray, img_binary, color):
     
     #Previous fixed values (for reference): minDist = 70 (?), maxRadius = 50
     #param1 might need to be image specific, evaluate results with fixed 300
-    circles = cv.HoughCircles(img_gray, cv.HOUGH_GRADIENT, 1, max, param1=300, param2=14, minRadius=14, maxRadius=max)
+    circles = cv.HoughCircles(img_gray, cv.HOUGH_GRADIENT, 1, max, param1=300, param2=20, minRadius=14, maxRadius=max)
 
     if circles is not None:
         circles = np.uint16(np.around(circles))
