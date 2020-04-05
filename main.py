@@ -21,7 +21,7 @@ def detect_shape(contour):
         # a square will have an aspect ratio that is approximately equal to one, otherwise, the shape is a rectangle
         shape = 'square' if ar >= 0.95 and ar <= 1.05 else 'rectangle'
     
-    return shape
+    return shape, approx
 
 
 # TO DO: option to take the picture
@@ -29,7 +29,7 @@ def detect_shape(contour):
 filename = input('Filename: ')
 img = cv.imread(filename)
 
-# img = cv.imread('./examples/blue-rectangles/1.jpg') # retorna Mat
+# img = cv.imread('./examples/blue-rectangles/3.jpg') # retorna Mat
 display_image('Original image', img)
 blurred = cv.bilateralFilter(img, 5, 75, 75)
 # display_image('Blurred', blurred)
@@ -45,25 +45,15 @@ dark_blue = (100, 0, 0)
 mask = cv.inRange(blurred, dark_blue, light_blue)
 result = cv.bitwise_and(blurred, blurred, mask=mask)
 
-display_image('Thresholding blue', result)
+# display_image('Thresholding blue', result)
 
 ###### SHAPE #######
 
-# applying Canny edge detector
 gray_img = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
-# img_edges_enhanced = cv.Canny(gray_img, 100, 200)
-
-# show the result of applying Canny
-# display_image('Canny edge detector', img_edges_enhanced)
-
-_, img_edges_enhanced = cv.threshold(gray_img, 1, 255, cv.THRESH_BINARY)
+_, bynary_img = cv.threshold(gray_img, 1, 255, cv.THRESH_BINARY)
 
 # detecting contours
-# contours, hierarchy = cv.findContours(img_edges_enhanced, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-contours, _ = cv.findContours(img_edges_enhanced, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)    
-
-# show the result contours (60)
-# img_contours = cv.drawContours(img, contours, -1, (0,255,0), 1)
+contours, _ = cv.findContours(bynary_img, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)    
 
 # loop over the contours
 for c in contours:
@@ -71,14 +61,13 @@ for c in contours:
     M = cv.moments(c)
     if M['m00'] == 0:
         continue
-
-    shape = detect_shape(c)
+    
+    shape, c = detect_shape(c)
     if shape != 'rectangle' and shape != 'square':
         continue
 
     if cv.contourArea(c) < 1000:
         continue
-    print(cv.contourArea(c))
 
     cv.drawContours(img, [c], -1, (0, 255, 0), 2)
     cX = c[0,0,0]
