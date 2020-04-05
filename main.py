@@ -26,23 +26,24 @@ def detect_shape(contour):
 
 # TO DO: option to take the picture
 # read from keyboard the name of the image
-filename = input('Filename: ')
-img = cv.imread(filename)
+# filename = input('Filename: ')
+# img = cv.imread(filename)
 
-# img = cv.imread('./examples/blue-rectangles/3.jpg') # retorna Mat
+img = cv.imread('./examples/blue-rectangles/22.jpg', cv.IMREAD_COLOR) # retorna Mat
 display_image('Original image', img)
 blurred = cv.bilateralFilter(img, 5, 75, 75)
 # display_image('Blurred', blurred)
 
 ###### COLOR #######
-# Maybe change to HSV?
 
-# shades of blue (light and dark)
-light_blue = (255, 150, 60)
-dark_blue = (100, 0, 0)
+img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+blurred = cv.bilateralFilter(img_hsv, 5, 75, 75)
+
+light_blue = (100, 140, 100)
+dark_blue = (120, 255, 255)
 
 # all values that are not in the above range will be black
-mask = cv.inRange(blurred, dark_blue, light_blue)
+mask = cv.inRange(blurred, light_blue, dark_blue)
 result = cv.bitwise_and(blurred, blurred, mask=mask)
 
 # display_image('Thresholding blue', result)
@@ -50,6 +51,7 @@ result = cv.bitwise_and(blurred, blurred, mask=mask)
 ###### SHAPE #######
 
 gray_img = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+gray_img = cv.bilateralFilter(gray_img, 5, 75, 75)
 _, bynary_img = cv.threshold(gray_img, 1, 255, cv.THRESH_BINARY)
 
 # detecting contours
@@ -66,7 +68,7 @@ for c in contours:
     if shape != 'rectangle' and shape != 'square':
         continue
 
-    if cv.contourArea(c) < 1000:
+    if cv.contourArea(c) < 1000 or not cv.isContourConvex(c):
         continue
 
     cv.drawContours(img, [c], -1, (0, 255, 0), 2)
