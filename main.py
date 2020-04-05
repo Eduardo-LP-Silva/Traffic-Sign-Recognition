@@ -20,7 +20,7 @@ def processImage(img, color):
     img_gray = smooth(img_gray) # Post-segmentation smoothing
     img_binary = threshold(img_gray)
 
-    #findCircles(img, img_gray, img_binary, color)
+    findCircles(img, img_gray, img_binary, color)
     findContours(img, img_binary, color)
 
 # Noise smoothing
@@ -123,6 +123,9 @@ def findCircles(img, img_gray, img_binary, color):
     rows = img_gray.shape[0]
 
     max = utils.getMaxCircleWidth(img_binary)
+
+    if(max == 0):
+        return
     
     #Previous fixed values (for reference): minDist = 70 (?), maxRadius = 50
     #param1 might need to be image specific, evaluate results with fixed 300
