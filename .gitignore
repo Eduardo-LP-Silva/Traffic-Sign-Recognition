@@ -130,3 +130,6 @@ dmypy.json
 
 # Actually necessary
 **/examples/*
+
+# Custom
+examples/*
