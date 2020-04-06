@@ -35,7 +35,7 @@ def segment(img, color):
     # Red Segmentation (HSV Ranges -> (0-179, 0-255, 0-255))
     red_ranges = [(0, 70, 70), (4, 255, 255), (170, 70, 70), (180, 255, 255)]
     # Blue Segmentation
-    blue_ranges = [(100, 140, 100), (120, 255, 255)]
+    blue_ranges = [(100, 140, 93), (120, 255, 255)]
 
     img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
@@ -60,6 +60,7 @@ def threshold(img_gray):
 
 # Finds contours in a binary image
 def findContours(img, img_binary, color):
+    #utils.showImage(img_binary)
     areas = []
     mask = img_binary.copy()
     contours, hierarchy = cv.findContours(img_binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
@@ -170,6 +171,6 @@ def findCircles(img, img_binary, max_radius, color):
             radius = i[2]
       
             cv.circle(img, center, radius, (0, 255, 255), 2)
-            cv.putText(img, color + ' Circle', (i[0] + radius, i[1] + radius), font, 1, (0, 255, 255), thickness=2)
+            cv.putText(img, color + ' Circle', (i[0], i[1] - radius), font, 1, (0, 255, 255), thickness=2)
 
 main()
