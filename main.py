@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+import math
 import utils
 
 # Program's entry point
@@ -20,9 +21,9 @@ def processImage(img, color):
     img_gray = smooth(img_gray) # Post-segmentation smoothing
     img_binary = threshold(img_gray)
 
-    img_binary = findContours(img, img_binary, color)
+    img_binary, max_radius = findContours(img, img_binary, color)
     img_without_objects = cv.bitwise_and(img_binary, img_gray)
-    findCircles(img, img_without_objects, color)
+    findCircles(img, img_without_objects, max_radius, color)
 
 # Noise smoothing
 def smooth(img):
@@ -59,6 +60,7 @@ def threshold(img_gray):
 
 # Finds contours in a binary image
 def findContours(img, img_binary, color):
+    areas = []
     mask = img_binary.copy()
     contours, hierarchy = cv.findContours(img_binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
@@ -90,12 +92,18 @@ def findContours(img, img_binary, color):
         if(len(approx) <= 4):
             cv.drawContours(mask, [cnt], -1, 0, -1)
         else:
+            areas.append(cv.contourArea(cnt))
             continue
 
         classifyContours(img, approx, color)
 
     # utils.showImage()
-    return cv.bitwise_and(img_binary, mask)
+    if(len(areas) != 0):
+        max_radius = int(math.sqrt(max(areas) / math.pi))
+    else:
+        max_radius = 0
+    
+    return cv.bitwise_and(img_binary, mask), max_radius
 
 # Classifies contours in either triangles or squares/rectangles and displays them over the original image
 def classifyContours(img, approx, color):
@@ -139,20 +147,20 @@ def classifyContours(img, approx, color):
         cv.putText(img, color + shape, (x, y), font, 1, (0, 255, 0), thickness=2)
 
 # Finds circles in a grey image, displaying them over the original one
-def findCircles(img, img_binary, color):
-    # utils.showImage(img_binary)
+def findCircles(img, img_binary, max_radius, color):
+    #utils.showImage(img_binary)
     font = cv.FONT_HERSHEY_COMPLEX
     rows = img_binary.shape[0]
 
-    max = utils.getMaxCircleWidth(img_binary)
-
-    if(max == 0):
+    if(max_radius == 0):
         return
-    
+
+    tolerance = 5
+
     # Previous fixed values (for reference): minDist = 70 (?), maxRadius = 50
     # param1 might need to be image specific, evaluate results with fixed 300
     # param1=300, param2=16
-    circles = cv.HoughCircles(img_binary, cv.HOUGH_GRADIENT, 1, max, param1=200, param2=16, minRadius=14, maxRadius=max)
+    circles = cv.HoughCircles(img_binary, cv.HOUGH_GRADIENT, 1, max_radius * 2 - tolerance, param1=100, param2=16, minRadius=14, maxRadius=max_radius + tolerance)
 
     if circles is not None:
         circles = np.uint16(np.around(circles))
