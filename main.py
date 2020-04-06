@@ -6,7 +6,7 @@ import utils
 def main():
     img = utils.readImage()
     img = smooth(img)
-
+    
     img_red, img_blue = img, img
 
     processImage(img_red, 'Red')
@@ -59,14 +59,14 @@ def threshold(img_gray):
 # Finds contours in a binary image
 def findContours(img, img_binary, color):
     mask = img_binary.copy()
-    contours, hierarchy = cv.findContours(img_binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv.findContours(img_binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
     for i in range(len(contours)):
         cnt = contours[i]
         cnt_len = cv.arcLength(cnt, True)
 
         #Max contour length may be adjusted if needed 
-        if(cnt_len <= 70 or hierarchy[0][i][3] != -1):
+        if(cnt_len <= 70):
             cv.drawContours(mask, [cnt], -1, 0, -1)
             continue
 
@@ -85,15 +85,12 @@ def findContours(img, img_binary, color):
 
         classifyContours(img, approx, color)
 
-    #utils.showImage(mask, 'Mask')
     return cv.bitwise_and(img_binary, mask)
-    #utils.showImage(img_binary, 'Filtered')
 
 # Classifies contours in either triangles or squares/rectangles and displays them over the original image
 def classifyContours(img, approx, color):
     font = cv.FONT_HERSHEY_COMPLEX
     approx_ravel = approx.ravel()
-
     x = approx_ravel[0]
     y = approx_ravel[1]
 
@@ -114,7 +111,7 @@ def classifyContours(img, approx, color):
 
             if(diff1 > 30 or diff2 > 30 or diff3 > 30):
                 return
-
+            
             shape = ' Triangle'
         elif(side_no == 4):
             #print(approx_ravel)
@@ -126,13 +123,14 @@ def classifyContours(img, approx, color):
                     return
 
             shape = ' Rectangle'
+        else:
+            return
 
-        img = cv.drawContours(img, [approx], -1, (0, 255, 0), 3)
-        cv.putText(img, color + shape, (x, y), font, 1, (0, 255, 0), thickness=2)
+        img = cv.drawContours(img, [approx], -1, (0, 255, 255), 3)
+        cv.putText(img, color + shape, (x, y), font, 1, (0, 255, 255), thickness=2)
 
 # Finds circles in a grey image, displaying them over the original one
 def findCircles(img, img_binary, color):
-    #utils.showImage(img_binary)
     font = cv.FONT_HERSHEY_COMPLEX
     rows = img_binary.shape[0]
 

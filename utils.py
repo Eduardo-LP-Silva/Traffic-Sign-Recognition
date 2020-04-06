@@ -6,9 +6,12 @@ import math
 def readImage():
     # TODO Add option to read image from camera
     #filename = input('Filename: ')
-    img = cv.imread('./examples/3.jpg', cv.IMREAD_COLOR) #TODO Replace with var filename
+    img = cv.imread('./examples/37.png', cv.IMREAD_COLOR) #TODO Replace with var filename
     
     return img
+
+def saveImage(img, filename='example.png'):
+    cv.imwrite(filename, img)
 
 # Shows an image and waits for user input before destroying the respective window
 def showImage(image, windowName='OpenCV'):
