@@ -10,6 +10,9 @@ def readImage():
     
     return img
 
+def saveImage(img, filename='example.png'):
+    cv.imwrite(filename, img)
+
 # Shows an image and waits for user input before destroying the respective window
 def showImage(image, windowName='OpenCV'):
     cv.imshow(windowName, image)
