@@ -21,11 +21,12 @@ def processImage(img, color):
     img_binary = threshold(img_gray)
 
     img_binary = findContours(img, img_binary, color)
-    findCircles(img, img_binary, color)
+    img_without_objects = cv.bitwise_and(img_binary, img_gray)
+    findCircles(img, img_without_objects, color)
 
 # Noise smoothing
 def smooth(img):
-    #Last two values may be adjusted if needed
+    # Last two values may be adjusted if needed
     return cv.bilateralFilter(img, 5, 75, 75)
 
 # Segments an image by a given color (red or blue)
@@ -65,15 +66,15 @@ def findContours(img, img_binary, color):
         cnt = contours[i]
         cnt_len = cv.arcLength(cnt, True)
 
-        #Max contour length may be adjusted if needed 
+        # Max contour length may be adjusted if needed 
         if(cnt_len <= 70 or hierarchy[0][i][3] != -1):
             cv.drawContours(mask, [cnt], -1, 0, -1)
             continue
 
         approx = cv.approxPolyDP(cnt, 0.03 * cv.arcLength(cnt, True), True)
 
-        #Maybe change area so it's a value based on overall image size / area
-        #or not cv.isContourConvex(approx) #Add to eliminate further false positives
+        # Maybe change area so it's a value based on overall image size / area
+        # or not cv.isContourConvex(approx) # Add to eliminate further false positives
         if cv.contourArea(approx) < 800:
             cv.drawContours(mask, [cnt], -1, 0, -1)
             continue
@@ -85,9 +86,9 @@ def findContours(img, img_binary, color):
 
         classifyContours(img, approx, color)
 
-    #utils.showImage(mask, 'Mask')
+    # utils.showImage(mask, 'Mask')
     return cv.bitwise_and(img_binary, mask)
-    #utils.showImage(img_binary, 'Filtered')
+    # utils.showImage(img_binary, 'Filtered')
 
 # Classifies contours in either triangles or squares/rectangles and displays them over the original image
 def classifyContours(img, approx, color):
@@ -102,7 +103,7 @@ def classifyContours(img, approx, color):
     if(side_no <= 4):
         shape = ''
 
-        # TODO Add more restrictions
+        # TODO: Add more restrictions
         if(side_no == 3):
             side1 = utils.calcDistance(approx_ravel[0], approx_ravel[1], approx_ravel[2], approx_ravel[3])
             side2 = utils.calcDistance(approx_ravel[0], approx_ravel[1], approx_ravel[4], approx_ravel[5])
@@ -117,7 +118,7 @@ def classifyContours(img, approx, color):
 
             shape = ' Triangle'
         elif(side_no == 4):
-            #print(approx_ravel)
+            # print(approx_ravel)
             contour_only_img = np.zeros((len(img), len(img[0])), np.uint8)
             angles = utils.calcCornerAngles(cv.drawContours(contour_only_img, [approx], -1, (255), 1), approx_ravel)
 
@@ -132,7 +133,7 @@ def classifyContours(img, approx, color):
 
 # Finds circles in a grey image, displaying them over the original one
 def findCircles(img, img_binary, color):
-    #utils.showImage(img_binary)
+    # utils.showImage(img_binary)
     font = cv.FONT_HERSHEY_COMPLEX
     rows = img_binary.shape[0]
 
@@ -141,9 +142,10 @@ def findCircles(img, img_binary, color):
     if(max == 0):
         return
     
-    #Previous fixed values (for reference): minDist = 70 (?), maxRadius = 50
-    #param1 might need to be image specific, evaluate results with fixed 300
-    circles = cv.HoughCircles(img_binary, cv.HOUGH_GRADIENT, 1, max, param1=300, param2=16, minRadius=14, maxRadius=max)
+    # Previous fixed values (for reference): minDist = 70 (?), maxRadius = 50
+    # param1 might need to be image specific, evaluate results with fixed 300
+    # param1=300, param2=16
+    circles = cv.HoughCircles(img_binary, cv.HOUGH_GRADIENT, 1, max, param1=200, param2=16, minRadius=14, maxRadius=max)
 
     if circles is not None:
         circles = np.uint16(np.around(circles))

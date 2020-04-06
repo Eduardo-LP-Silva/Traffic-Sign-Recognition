@@ -5,8 +5,8 @@ import math
 # Reads an image in colored mode
 def readImage():
     # TODO Add option to read image from camera
-    #filename = input('Filename: ')
-    img = cv.imread('./examples/3.jpg', cv.IMREAD_COLOR) #TODO Replace with var filename
+    # filename = input('Filename: ')
+    img = cv.imread('./examples/rectangles/1.jpg', cv.IMREAD_COLOR) # TODO Replace with var filename
     
     return img
 
@@ -38,9 +38,9 @@ def calcCornerAngles(cnt_img, corners):
 
         intersect_pts = np.where(intersect_img > 1)
 
-        #print(intersect_pts)
-        #showImage(cv.circle(cnt_img, (corners[k], corners[k + 1]), max_radius // 2, (255, 255, 255)))
-        #print(corners[k + 1])
+        # print(intersect_pts)
+        # showImage(cv.circle(cnt_img, (corners[k], corners[k + 1]), max_radius // 2, (255, 255, 255)))
+        # print(corners[k + 1])
         
         if(len(intersect_pts[0]) < 2 or len(intersect_pts[1]) < 2):
             angles.append(0)
@@ -49,8 +49,8 @@ def calcCornerAngles(cnt_img, corners):
         vector1 = (intersect_pts[1][0] - corners[k], intersect_pts[0][0] - corners[k + 1])
         vector2 = (intersect_pts[1][1] - corners[k], intersect_pts[0][1] - corners[k + 1])
 
-        #print(vector1)
-        #print(vector2)
+        # print(vector1)
+        # print(vector2)
 
         scalar_p = vector1[0] * vector2[0] + vector1[1] * vector2[1]
         norm1 = math.sqrt(math.pow(vector1[0], 2) + math.pow(vector1[1], 2))
