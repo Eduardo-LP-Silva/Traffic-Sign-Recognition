@@ -75,9 +75,17 @@ def findContours(img, img_binary, color):
 
         # Maybe change area so it's a value based on overall image size / area
         # or not cv.isContourConvex(approx) # Add to eliminate further false positives
-        if cv.contourArea(approx) < 800:
+
+        height, width = img.shape[:2]
+        img_area = width * height
+        ratio = int(cv.contourArea(approx)/float(img_area) * 100000.0)
+        if ratio <= 65:
             cv.drawContours(mask, [cnt], -1, 0, -1)
             continue
+
+        # if cv.contourArea(approx) < 800:
+        #     cv.drawContours(mask, [cnt], -1, 0, -1)
+        #     continue
 
         if(len(approx) <= 4):
             cv.drawContours(mask, [cnt], -1, 0, -1)
@@ -86,9 +94,8 @@ def findContours(img, img_binary, color):
 
         classifyContours(img, approx, color)
 
-    # utils.showImage(mask, 'Mask')
+    # utils.showImage()
     return cv.bitwise_and(img_binary, mask)
-    # utils.showImage(img_binary, 'Filtered')
 
 # Classifies contours in either triangles or squares/rectangles and displays them over the original image
 def classifyContours(img, approx, color):
