@@ -33,7 +33,7 @@ def smooth(img):
 # Segments an image by a given color (red or blue)
 def segment(img, color):
     # Red Segmentation (HSV Ranges -> (0-179, 0-255, 0-255))
-    red_ranges = [(0, 70, 70), (4, 255, 255), (170, 70, 70), (180, 255, 255)]
+    red_ranges = [(0, 70, 90), (4, 255, 255), (170, 70, 70), (180, 255, 255)]
     # Blue Segmentation
     blue_ranges = [(100, 140, 93), (120, 255, 255)]
     
