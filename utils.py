@@ -2,12 +2,54 @@ import cv2 as cv
 import numpy as np
 import math
 
-# Reads an image in colored mode
+# Returns image to be analysed
 def readImage():
-    # TODO Add option to read image from camera
-    # filename = input('Filename: ')
-    img = cv.imread('./examples/triangles/5.jpg', cv.IMREAD_COLOR) # TODO Replace with var filename
+    # Show menu
+    print (30 * '-')
+    print ('Options: ')
+    print ('1. Provide an image path')
+    print ('2. Capture photo with webcam')
+    print (30 * '-')
+
+    option = getInput('[1-2]')
+
+    while option != 1 and option != 2:
+        print ("Invalid number. Try again...")
+        option = getInput()
+    
+    if option == 1:
+        filepath = input('Image path: ')
+        img = cv.imread(filepath, cv.IMREAD_COLOR)
+    else:
+        print('Press space to capture image')
+        img = captureImage()
+    
     return img
+
+def getInput(range):
+    option = input('Enter your option ' + range + ': ')
+    option = int(option)
+    return option
+
+def captureImage():
+    cam = cv.VideoCapture(0)
+
+    img_counter = 0
+
+    while True:
+        ret, frame = cam.read()
+        cv.imshow("Press space to capture image", frame)
+        if not ret:
+            break
+        k = cv.waitKey(1)
+
+        # SPACE pressed
+        if k%256 == 32:
+            break
+    
+    cam.release()
+    cv.destroyAllWindows()
+    return frame
 
 def saveImage(img, filename='example.png'):
     cv.imwrite(filename, img)
