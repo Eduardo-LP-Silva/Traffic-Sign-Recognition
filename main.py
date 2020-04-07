@@ -86,19 +86,6 @@ def findContours(img, img_binary, color):
             cv.drawContours(mask, [cnt], -1, 0, -1)
             continue
 
-        # Pre processing for the circles
-        # compute the center of the contour
-        M = cv.moments(cnt)
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
-
-        for points in cnt:
-            x = points[0,0]
-            y = points[0,1]
-            sum = (cX-x)*(cX-x) + (cY-y)*(cY-y)
-            dist = math.sqrt(sum)
-            # print(dist)
-
         if(len(approx) <= 4):
             cv.drawContours(mask, [cnt], -1, 0, -1)
         elif(len(approx) >= 6): 
