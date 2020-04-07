@@ -28,7 +28,6 @@ def processImage(img, color):
 
 # Noise smoothing
 def smooth(img):
-    # Last two values may be adjusted if needed
     return cv.bilateralFilter(img, 5, 75, 75)
 
 # Segments an image by a given color (red or blue)
@@ -69,15 +68,11 @@ def findContours(img, img_binary, color):
         cnt = contours[i]
         cnt_len = cv.arcLength(cnt, True)
 
-        #Max contour length may be adjusted if needed 
         if(cnt_len <= 70):
             cv.drawContours(mask, [cnt], -1, 0, -1)
             continue
 
         approx = cv.approxPolyDP(cnt, 0.03 * cv.arcLength(cnt, True), True)
-
-        # Maybe change area so it's a value based on overall image size / area
-        # or not cv.isContourConvex(approx) # Add to eliminate further false positives
 
         height, width = img.shape[:2]
         img_area = width * height
@@ -94,7 +89,6 @@ def findContours(img, img_binary, color):
 
         classifyContours(img, approx, color)
 
-    # utils.showImage()
     if(len(areas) != 0):
         max_radius = int(math.sqrt(max(areas) / math.pi))
     else:
@@ -114,7 +108,6 @@ def classifyContours(img, approx, color):
     if(side_no <= 4):
         shape = ''
 
-        # TODO: Add more restrictions
         if(side_no == 3):
             side1 = utils.calcDistance(approx_ravel[0], approx_ravel[1], approx_ravel[2], approx_ravel[3])
             side2 = utils.calcDistance(approx_ravel[0], approx_ravel[1], approx_ravel[4], approx_ravel[5])
@@ -146,6 +139,7 @@ def classifyContours(img, approx, color):
 
 # Finds circles in a grey image, displaying them over the original one
 def findCircles(img, img_binary, max_radius, color):
+    # Reduce white noise and enhance shapes
     kernel = np.ones((3, 3), np.uint8)
     img_binary = cv.erode(img_binary, kernel, iterations = 3)
     img_binary = cv.dilate(img_binary, kernel, iterations = 3)
@@ -158,9 +152,6 @@ def findCircles(img, img_binary, max_radius, color):
 
     tolerance = 5
 
-    # Previous fixed values (for reference): minDist = 70 (?), maxRadius = 50
-    # param1 might need to be image specific, evaluate results with fixed 300
-    # param1=300, param2=16
     circles = cv.HoughCircles(img_binary, cv.HOUGH_GRADIENT, 1, max_radius * 2 - tolerance, param1=100, param2=14, minRadius=14, maxRadius=max_radius + tolerance)
 
     if circles is not None:
