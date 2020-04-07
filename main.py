@@ -23,6 +23,7 @@ def processImage(img, color):
 
     img_binary, max_radius = findContours(img, img_binary, color)
     img_without_objects = cv.bitwise_and(img_binary, img_gray)
+
     findCircles(img, img_without_objects, max_radius, color)
 
 # Noise smoothing
@@ -60,7 +61,6 @@ def threshold(img_gray):
 
 # Finds contours in a binary image
 def findContours(img, img_binary, color):
-    #utils.showImage(img_binary)
     areas = []
     mask = img_binary.copy()
     contours, hierarchy = cv.findContours(img_binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -86,9 +86,18 @@ def findContours(img, img_binary, color):
             cv.drawContours(mask, [cnt], -1, 0, -1)
             continue
 
-        # if cv.contourArea(approx) < 800:
-        #     cv.drawContours(mask, [cnt], -1, 0, -1)
-        #     continue
+        # Pre processing for the circles
+        # compute the center of the contour
+        M = cv.moments(cnt)
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+
+        for points in cnt:
+            x = points[0,0]
+            y = points[0,1]
+            sum = (cX-x)*(cX-x) + (cY-y)*(cY-y)
+            dist = math.sqrt(sum)
+            # print(dist)
 
         if(len(approx) <= 4):
             cv.drawContours(mask, [cnt], -1, 0, -1)
@@ -150,7 +159,10 @@ def classifyContours(img, approx, color):
 
 # Finds circles in a grey image, displaying them over the original one
 def findCircles(img, img_binary, max_radius, color):
-    #utils.showImage(img_binary)
+    kernel = np.ones((3, 3), np.uint8)
+    img_binary = cv.erode(img_binary, kernel, iterations = 3)
+    img_binary = cv.dilate(img_binary, kernel, iterations = 3)
+
     font = cv.FONT_HERSHEY_COMPLEX
     rows = img_binary.shape[0]
 
