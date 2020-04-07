@@ -36,7 +36,7 @@ def segment(img, color):
     red_ranges = [(0, 70, 70), (4, 255, 255), (170, 70, 70), (180, 255, 255)]
     # Blue Segmentation
     blue_ranges = [(100, 140, 93), (120, 255, 255)]
-
+    
     img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
     if color == 'Red':
@@ -92,7 +92,7 @@ def findContours(img, img_binary, color):
 
         if(len(approx) <= 4):
             cv.drawContours(mask, [cnt], -1, 0, -1)
-        else:
+        elif(len(approx) >= 6): 
             areas.append(cv.contourArea(cnt))
             continue
 
@@ -162,7 +162,7 @@ def findCircles(img, img_binary, max_radius, color):
     # Previous fixed values (for reference): minDist = 70 (?), maxRadius = 50
     # param1 might need to be image specific, evaluate results with fixed 300
     # param1=300, param2=16
-    circles = cv.HoughCircles(img_binary, cv.HOUGH_GRADIENT, 1, max_radius * 2 - tolerance, param1=100, param2=16, minRadius=14, maxRadius=max_radius + tolerance)
+    circles = cv.HoughCircles(img_binary, cv.HOUGH_GRADIENT, 1, max_radius * 2 - tolerance, param1=100, param2=14, minRadius=14, maxRadius=max_radius + tolerance)
 
     if circles is not None:
         circles = np.uint16(np.around(circles))
